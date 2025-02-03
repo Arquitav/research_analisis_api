@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Análisis de Trabajos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label { display: block; margin-top: 15px; }
+    textarea { width: 100%; height: 100px; }
+    #resultado { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
+  </style>
+</head>
+<body>
+  <h1>Análisis de Trabajos</h1>
+  <form id="formulario">
+    <label for="pdf">Cargar PDF:</label>
+    <input type="file" id="pdf" name="pdf" accept="application/pdf" required>
+
+    <label for="rubrica">Rubrica:</label>
+    <textarea id="rubrica" name="rubrica" placeholder="Escribe o pega la rubrica" required></textarea>
+
+    <label for="notas">Notas adicionales:</label>
+    <textarea id="notas" name="notas" placeholder="Escribe las notas adicionales" required></textarea>
+
+    <label for="clave">Clave secreta:</label>
+    <input type="password" id="clave" name="clave" required>
+
+    <button type="submit">Enviar a la API</button>
+  </form>
+
+  <div id="resultado"></div>
+
+  <script>
+    document.getElementById('formulario').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append('pdf', document.getElementById('pdf').files[0]);
+      formData.append('rubrica', document.getElementById('rubrica').value);
+      formData.append('notas', document.getElementById('notas').value);
+      formData.append('clave', document.getElementById('clave').value);
+
+      try {
+        const respuesta = await fetch('http://localhost:5000/api/process', {
+          method: 'POST',
+          body: formData
+        });
+        const datos = await respuesta.json();
+        document.getElementById('resultado').textContent = JSON.stringify(datos, null, 2);
+      } catch (error) {
+        document.getElementById('resultado').textContent = 'Error: ' + error;
+      }
+    });
+  </script>
+</body>
+</html>

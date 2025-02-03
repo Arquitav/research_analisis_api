@@ -40,9 +40,9 @@
       formData.append('clave', document.getElementById('clave').value);
 
       try {
-        const respuesta = await fetch('http://localhost:5000/api/process', {
-          method: 'POST',
-          body: formData
+       const respuesta = await fetch('https://79c5-2806-10a6-e-4b76-d78-502f-27-3bc4.ngrok-free.app/api/process', {
+         method: 'POST',
+         body: formData
         });
         const datos = await respuesta.json();
         document.getElementById('resultado').textContent = JSON.stringify(datos, null, 2);

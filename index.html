@@ -2,12 +2,62 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.ngrok-free.app https://cdn.jsdelivr.net;">
   <title>Análisis de Trabajos</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     label { display: block; margin-top: 15px; }
     textarea { width: 100%; height: 100px; }
-    #resultado { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
+    
+    .resultado-estilizado {
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+    
+    .resultado-estilizado h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 8px;
+    }
+    
+    .resultado-estilizado strong {
+      color: #e74c3c;
+    }
+    
+    .resultado-estilizado ul {
+      padding-left: 25px;
+      margin: 15px 0;
+    }
+    
+    .resultado-estilizado li {
+      margin: 8px 0;
+    }
+
+    .cargando {
+      color: #3498db;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 10px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -16,8 +66,8 @@
     <label for="pdf">Cargar PDF:</label>
     <input type="file" id="pdf" name="pdf" accept="application/pdf" required>
 
-    <label for="rubrica">Rubrica:</label>
-    <textarea id="rubrica" name="rubrica" placeholder="Escribe o pega la rubrica" required></textarea>
+    <label for="rubrica">Rúbrica:</label>
+    <textarea id="rubrica" name="rubrica" placeholder="Escribe o pega la rúbrica" required></textarea>
 
     <label for="notas">Notas adicionales:</label>
     <textarea id="notas" name="notas" placeholder="Escribe las notas adicionales" required></textarea>
@@ -28,28 +78,56 @@
     <button type="submit">Enviar a la API</button>
   </form>
 
-  <div id="resultado"></div>
+  <div id="resultado" class="resultado-estilizado"></div>
 
   <script>
-    document.getElementById('formulario').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData();
-      formData.append('pdf', document.getElementById('pdf').files[0]);
-      formData.append('rubrica', document.getElementById('rubrica').value);
-      formData.append('notas', document.getElementById('notas').value);
-      formData.append('clave', document.getElementById('clave').value);
+  document.getElementById('formulario').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const pdfInput = document.getElementById('pdf');
+    if (pdfInput.files[0].type !== 'application/pdf') {
+      alert('Solo se permiten archivos PDF');
+      return;
+    }
 
-      try {
-       const respuesta = await fetch('https://79c5-2806-10a6-e-4b76-d78-502f-27-3bc4.ngrok-free.app/api/process', {
-         method: 'POST',
-         body: formData
-        });
-        const datos = await respuesta.json();
-        document.getElementById('resultado').textContent = JSON.stringify(datos, null, 2);
-      } catch (error) {
-        document.getElementById('resultado').textContent = 'Error: ' + error;
+    const formData = new FormData();
+    formData.append('pdf', pdfInput.files[0]);
+    formData.append('rubrica', document.getElementById('rubrica').value);
+    formData.append('notas', document.getElementById('notas').value);
+    formData.append('clave', document.getElementById('clave').value);
+
+    try {
+      document.getElementById('resultado').innerHTML = `
+        <div class="cargando">
+          Analizando documento...
+          <div class="spinner"></div>
+        </div>
+      `;
+
+      const respuesta = await fetch('https://79c5-2806-10a6-e-4b76-d78-502f-27-3bc4.ngrok-free.app/api/process', {
+        method: 'POST',
+        body: formData,
+        mode: 'cors'
+      });
+
+      if (!respuesta.ok) {
+        const errorText = await respuesta.text();
+        throw new Error(`Error ${respuesta.status}: ${errorText}`);
       }
-    });
+
+      const datos = await respuesta.json();
+      const htmlContent = marked.parse(datos.detalles.resultadoIA || 'No se recibió respuesta');
+      document.getElementById('resultado').innerHTML = htmlContent;
+
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('resultado').innerHTML = `
+        <div style="color: red; font-weight: bold;">
+          Error: ${error.message}
+        </div>
+      `;
+    }
+  });
   </script>
 </body>
 </html>
